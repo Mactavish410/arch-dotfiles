@@ -1,0 +1,87 @@
+/* Waybar theme */
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "JetBrainsMono Nerd Font", "Noto Sans", sans-serif;
+    font-size: 13px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: alpha(#0d0208, 0.85);
+    color: #e8f0ff;
+    border-bottom: 2px solid #00f0ff;
+}
+
+#workspaces button {
+    padding: 0 8px;
+    color: #8a9bb0;
+    background: transparent;
+}
+
+#workspaces button.active {
+    color: #00f0ff;
+    border-bottom: 2px solid #00f0ff;
+}
+
+#workspaces button.urgent {
+    color: #ff2a6d;
+}
+
+#workspaces button:hover {
+    color: #e8f0ff;
+    background: alpha(#1a0a12, 0.6);
+}
+
+#cpu,
+#memory,
+#custom-gpu,
+#custom-docker,
+#custom-ollama,
+#network,
+#pulseaudio,
+#battery,
+#clock,
+#tray,
+#language,
+#mpris {
+    padding: 0 10px;
+    margin: 0 2px;
+    color: #e8f0ff;
+}
+
+#custom-gpu {
+    color: #00f0ff;
+}
+
+#custom-docker {
+    color: #ff2a6d;
+}
+
+#custom-ollama {
+    color: #fcee0a;
+}
+
+#clock {
+    color: #00f0ff;
+    font-weight: 600;
+}
+
+#language {
+    color: #8a9bb0;
+    min-width: 28px;
+}
+
+#mpris {
+    color: #ff2a6d;
+}
+
+#pulseaudio.muted {
+    color: #ff2a6d;
+}
+
+tooltip {
+    background: #1a0a12;
+    color: #e8f0ff;
+    border: 1px solid #00f0ff;
+}

@@ -1,0 +1,77 @@
+/* Rofi theme */
+* {
+    bg: #1e1e2e;
+    bg-alt: #313244;
+    fg: #cdd6f4;
+    fg-dim: #a6adc8;
+    accent: #cba6f7;
+    accent2: #89b4fa;
+    urgent: #f38ba8;
+    font: "JetBrainsMono Nerd Font 12";
+    background-color: transparent;
+    text-color: @fg;
+}
+
+window {
+    background-color: @bg;
+    border: 2px solid;
+    border-color: @accent;
+    border-radius: 8px;
+    width: 520px;
+    padding: 12px;
+}
+
+mainbox {
+    children: [inputbar, listview];
+    spacing: 10px;
+}
+
+inputbar {
+    background-color: @bg-alt;
+    border: 1px solid;
+    border-color: @accent;
+    border-radius: 6px;
+    padding: 10px 12px;
+    children: [prompt, entry];
+    spacing: 8px;
+}
+
+prompt {
+    text-color: @accent;
+}
+
+entry {
+    text-color: @fg;
+    placeholder: "Search…";
+    placeholder-color: @fg-dim;
+}
+
+listview {
+    lines: 10;
+    spacing: 4px;
+    scrollbar: false;
+}
+
+element {
+    padding: 8px 10px;
+    border-radius: 4px;
+    background-color: transparent;
+    text-color: @fg;
+}
+
+element selected {
+    background-color: @bg-alt;
+    text-color: @accent;
+    border: 1px solid;
+    border-color: @accent2;
+}
+
+element-text {
+    background-color: transparent;
+    text-color: inherit;
+}
+
+element-icon {
+    size: 20px;
+    margin: 0 8px 0 0;
+}

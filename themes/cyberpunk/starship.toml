@@ -1,0 +1,23 @@
+# Starship prompt theme
+format = "$directory$git_branch$git_status$character"
+
+[character]
+success_symbol = "[❯](bold #00f0ff)"
+error_symbol = "[❯](bold #ff2a6d)"
+vimcmd_symbol = "[❮](bold #ff2a6d)"
+
+[directory]
+style = "bold #00f0ff"
+truncation_length = 3
+truncate_to_repo = true
+
+[git_branch]
+symbol = " "
+style = "bold #ff2a6d"
+
+[git_status]
+style = "bold #fcee0a"
+
+[cmd_duration]
+min_time = 2000
+style = "bold #ff9f1c"

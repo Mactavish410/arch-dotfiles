@@ -1,0 +1,16 @@
+services:
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - WEBUI_AUTH=true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ${DATA_ROOT:-/mnt/data}/ai/open-webui:/app/backend/data
+    # Prefer host network on Linux if host.docker.internal is unavailable:
+    # network_mode: host

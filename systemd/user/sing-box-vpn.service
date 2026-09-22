@@ -1,0 +1,14 @@
+[Unit]
+Description=EndeavourOS sing-box VPN (user)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/sing-box run -c %h/.config/sing-box/config.json
+Restart=on-failure
+RestartSec=3
+# Do not elevate; mixed inbound on 127.0.0.1:2080
+
+[Install]
+WantedBy=default.target

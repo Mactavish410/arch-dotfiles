@@ -1,0 +1,31 @@
+[user]
+	name = Your Name
+	email = you@example.com
+
+[core]
+	editor = nvim
+	autocrlf = input
+	eol = lf
+	pager = less -F -X
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = true
+
+[push]
+	autoSetupRemote = true
+
+[color]
+	ui = auto
+
+[alias]
+	st = status -sb
+	co = checkout
+	br = branch
+	cm = commit
+	lg = log --oneline --graph --decorate -20
+
+[credential]
+	helper = store

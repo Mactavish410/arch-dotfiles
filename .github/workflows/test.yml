@@ -1,0 +1,33 @@
+name: EndeavourOS tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: bash + python checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck python3 python3-yaml
+
+      - name: Ensure LF and executable bits
+        run: |
+          chmod +x tests/run.sh tests/*.sh || true
+          # нормализуем CRLF если checkout на runner странный
+          if command -v dos2unix >/dev/null 2>&1; then
+            find tests -type f \( -name '*.sh' -o -name '*.py' \) -print0 | xargs -0 dos2unix -q || true
+          else
+            sed -i 's/\r$//' tests/*.sh tests/*.py 2>/dev/null || true
+          fi
+
+      - name: Run test suite
+        run: bash tests/run.sh

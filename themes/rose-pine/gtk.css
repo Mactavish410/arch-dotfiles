@@ -1,0 +1,14 @@
+/* GTK theme snippet — applied by theme-switch */
+@define-color theme_bg_color #191724;
+@define-color theme_fg_color #e0def4;
+@define-color theme_selected_bg_color #c4a7e7;
+@define-color theme_selected_fg_color #191724;
+@define-color borders #26233a;
+@define-color warning_color #f6c177;
+@define-color error_color #eb6f92;
+@define-color success_color #31748f;
+
+/* settings hint for nwg-look / gsettings */
+/* gtk-theme-name=rose-pine-gtk */
+/* icon-theme-name=Papirus-Dark */
+/* cursor-theme-name=Bibata-Modern-Ice */

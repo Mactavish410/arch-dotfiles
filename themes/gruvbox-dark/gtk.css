@@ -1,0 +1,14 @@
+/* GTK theme snippet — applied by theme-switch */
+@define-color theme_bg_color #282828;
+@define-color theme_fg_color #ebdbb2;
+@define-color theme_selected_bg_color #fe8019;
+@define-color theme_selected_fg_color #282828;
+@define-color borders #504945;
+@define-color warning_color #fe8019;
+@define-color error_color #fb4934;
+@define-color success_color #b8bb26;
+
+/* settings hint for nwg-look / gsettings */
+/* gtk-theme-name=Gruvbox-Dark */
+/* icon-theme-name=gruvbox-dark-icons-gtk */
+/* cursor-theme-name=Bibata-Modern-Classic */
