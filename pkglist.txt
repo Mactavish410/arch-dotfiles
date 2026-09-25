@@ -42,8 +42,6 @@ ufw
 openssh
 tailscale
 kdeconnect
-cuda
-cudnn
 python-virtualenv
 ffmpeg
 sox
@@ -51,7 +49,7 @@ libva-nvidia-driver
 docker
 docker-compose
 nvidia-container-toolkit
-ollama-cuda
+ollama
 ttf-jetbrains-mono-nerd
 noto-fonts
 noto-fonts-cjk

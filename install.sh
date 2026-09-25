@@ -23,7 +23,8 @@ ensure_env() {
   DATA_ROOT="${DATA_ROOT:-/mnt/data}"
   DOCKER_DATA_ROOT="${DOCKER_DATA_ROOT:-${DATA_ROOT}/docker}"
   OLLAMA_MODELS="${OLLAMA_MODELS:-${DATA_ROOT}/ollama}"
-  export DATA_ROOT DOCKER_DATA_ROOT OLLAMA_MODELS
+  INSTALL_HEAVY_AI="${INSTALL_HEAVY_AI:-0}"
+  export DATA_ROOT DOCKER_DATA_ROOT OLLAMA_MODELS INSTALL_HEAVY_AI
 }
 
 install_yay() {
@@ -54,6 +55,70 @@ install_nvidia_drivers() {
   else
     sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils || \
       warn "nvidia-dkms install failed — install drivers manually"
+  fi
+}
+
+# Free space in KiB for a path (filesystem of that path).
+fs_avail_kib() {
+  local path="$1"
+  df -Pk "${path}" 2>/dev/null | awk 'NR==2 {print $4}'
+}
+
+check_disk_space() {
+  local cache_avail root_avail
+  cache_avail="$(fs_avail_kib /var/cache/pacman/pkg 2>/dev/null || fs_avail_kib /)"
+  root_avail="$(fs_avail_kib /)"
+  cache_avail="${cache_avail:-0}"
+  root_avail="${root_avail:-0}"
+
+  log "disk free: / ≈ $((root_avail / 1024)) MiB, pacman cache fs ≈ $((cache_avail / 1024)) MiB"
+
+  # < 3 GiB free → downloads often die with "Failure writing output to destination"
+  if [[ "${cache_avail}" -lt $((3 * 1024 * 1024)) ]]; then
+    warn "мало места (<3 GiB) — pacman будет падать на больших пакетах (ollama-cuda/cuda)"
+    warn "проверь: df -h   и очисти кэш: sudo pacman -Scc"
+    if [[ "${INSTALL_HEAVY_AI:-0}" == "1" ]]; then
+      die "INSTALL_HEAVY_AI=1, но места недостаточно — освободи диск или поставь INSTALL_HEAVY_AI=0"
+    fi
+  fi
+}
+
+# cuda + cudnn + ollama-cuda are multi‑GB; skip on VM / small disks unless asked.
+want_heavy_ai() {
+  local avail
+  case "${INSTALL_HEAVY_AI:-0}" in
+    1|yes|true|TRUE|Yes) return 0 ;;
+    0|no|false|FALSE|No) return 1 ;;
+    auto)
+      avail="$(fs_avail_kib /)"
+      avail="${avail:-0}"
+      if [[ "${avail}" -lt $((20 * 1024 * 1024)) ]]; then
+        warn "INSTALL_HEAVY_AI=auto: <20 GiB free — skip cuda/cudnn/ollama-cuda"
+        return 1
+      fi
+      if ! pacman -Qq nvidia-open-dkms nvidia-open nvidia-dkms nvidia 2>/dev/null | grep -q .; then
+        warn "INSTALL_HEAVY_AI=auto: нет NVIDIA — skip heavy AI (use plain ollama)"
+        return 1
+      fi
+      return 0
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+install_ai_stack() {
+  if ! want_heavy_ai; then
+    log "heavy AI skipped (INSTALL_HEAVY_AI=${INSTALL_HEAVY_AI:-0}) — base ollama from pkglist is enough for VM"
+    log "на боевой машине с местом: INSTALL_HEAVY_AI=1 в .env и: sudo pacman -S --needed - < pkglist_ai.txt"
+    return 0
+  fi
+  if [[ -f "${DOTFILES_DIR}/pkglist_ai.txt" ]]; then
+    log "installing heavy AI stack from pkglist_ai.txt"
+    # Replace CPU ollama with CUDA build when both would conflict
+    if pacman -Qq ollama >/dev/null 2>&1 && ! pacman -Qq ollama-cuda >/dev/null 2>&1; then
+      sudo pacman -Rdd --noconfirm ollama 2>/dev/null || true
+    fi
+    pacman_install_list "${DOTFILES_DIR}/pkglist_ai.txt"
   fi
 }
 
@@ -92,7 +157,7 @@ pacman_install_list() {
     warn "batch install failed — retrying package-by-package"
     local p
     for p in "${have[@]}"; do
-      sudo pacman -S --needed --noconfirm "${p}" || warn "failed: ${p}"
+      sudo pacman -S --needed --noconfirm "${p}" || warn "failed: ${p} (диск/зеркало? df -h; sudo pacman -Scc)"
     done
   fi
 }
@@ -117,6 +182,8 @@ aur_install_list() {
 }
 
 install_packages() {
+  check_disk_space
+
   # Strict validation on the target machine (pacman). API-only hosts warn but continue
   # so Windows editing does not block; EOS always catches bad names before pacman -S.
   if command -v pacman >/dev/null 2>&1; then
@@ -130,6 +197,7 @@ install_packages() {
 
   pacman_install_list "${DOTFILES_DIR}/pkglist.txt"
   install_nvidia_drivers
+  install_ai_stack
   aur_install_list "${DOTFILES_DIR}/pkglist_aur.txt"
 }
 

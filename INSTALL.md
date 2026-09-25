@@ -357,6 +357,7 @@ cd ~/dotfiles
 
 | Симптом | Что проверить |
 |---------|----------------|
+| `Failure writing output to destination` | диск/кэш полный: `df -h`, `sudo pacman -Scc`. На VM не ставь cuda — `INSTALL_HEAVY_AI=0` |
 | `не найдена цель: …` | пакет не в official — в AUR или переименован. `./scripts/validate-pkglists.sh` |
 | Конфликт `nvidia-open*` / `nvidia-dkms` | EOS уже поставил open-драйвер; `nvidia-dkms` в pkglist не кладём |
 | Чёрный экран Hyprland | `nvidia_drm.modeset=1`, mkinitcpio, TTY Ctrl+Alt+F2 |

@@ -1,0 +1,5 @@
+# Heavy AI / NVIDIA compute — optional (VirtualBox / small disk: leave INSTALL_HEAVY_AI=0).
+# Enabled via .env INSTALL_HEAVY_AI=1 or auto when ≥20 GiB free + NVIDIA present.
+cuda
+cudnn
+ollama-cuda
