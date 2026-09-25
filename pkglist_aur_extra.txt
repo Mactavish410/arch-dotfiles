@@ -1,0 +1,5 @@
+# Optional / heavy AUR — skipped when INSTALL_EXTRAS=0 (default on small disks / VM).
+# cursor-bin pulls Electron (~hundreds of MiB + build cache).
+cursor-bin
+nekobox
+sunshine

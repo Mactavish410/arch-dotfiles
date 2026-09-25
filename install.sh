@@ -24,7 +24,8 @@ ensure_env() {
   DOCKER_DATA_ROOT="${DOCKER_DATA_ROOT:-${DATA_ROOT}/docker}"
   OLLAMA_MODELS="${OLLAMA_MODELS:-${DATA_ROOT}/ollama}"
   INSTALL_HEAVY_AI="${INSTALL_HEAVY_AI:-0}"
-  export DATA_ROOT DOCKER_DATA_ROOT OLLAMA_MODELS INSTALL_HEAVY_AI
+  INSTALL_EXTRAS="${INSTALL_EXTRAS:-0}"
+  export DATA_ROOT DOCKER_DATA_ROOT OLLAMA_MODELS INSTALL_HEAVY_AI INSTALL_EXTRAS
 }
 
 install_yay() {
@@ -73,12 +74,21 @@ check_disk_space() {
 
   log "disk free: / ≈ $((root_avail / 1024)) MiB, pacman cache fs ≈ $((cache_avail / 1024)) MiB"
 
+  # Critically full — even mkdir ~/.config fails
+  if [[ "${root_avail}" -lt $((512 * 1024)) ]]; then
+    die "диск почти полный (<512 MiB). Освободи место и повтори:
+  df -h
+  sudo pacman -Scc
+  rm -rf ~/.cache/yay /tmp/yay* 2>/dev/null
+  # VirtualBox: увеличь VDI (динамический диск) и вырасти раздел"
+  fi
+
   # < 3 GiB free → downloads often die with "Failure writing output to destination"
   if [[ "${cache_avail}" -lt $((3 * 1024 * 1024)) ]]; then
-    warn "мало места (<3 GiB) — pacman будет падать на больших пакетах (ollama-cuda/cuda)"
-    warn "проверь: df -h   и очисти кэш: sudo pacman -Scc"
-    if [[ "${INSTALL_HEAVY_AI:-0}" == "1" ]]; then
-      die "INSTALL_HEAVY_AI=1, но места недостаточно — освободи диск или поставь INSTALL_HEAVY_AI=0"
+    warn "мало места (<3 GiB) — большие пакеты (cursor-bin/cuda) будут падать"
+    warn "проверь: df -h   и очисти кэш: sudo pacman -Scc; rm -rf ~/.cache/yay"
+    if [[ "${INSTALL_HEAVY_AI:-0}" == "1" || "${INSTALL_EXTRAS:-0}" == "1" ]]; then
+      die "INSTALL_HEAVY_AI/INSTALL_EXTRAS=1, но места мало — поставь 0 в .env или увеличь диск VM"
     fi
   fi
 }
@@ -166,10 +176,18 @@ aur_install_list() {
   local list_file="$1"
   local -a want=()
   local pkg
+  local avail
 
   need_cmd yay
   mapfile -t want < <(grep -E '^[a-zA-Z0-9][a-zA-Z0-9.+_-]*$' "${list_file}" || true)
   [[ ${#want[@]} -gt 0 ]] || { warn "empty AUR list: ${list_file}"; return 0; }
+
+  avail="$(fs_avail_kib /home 2>/dev/null || fs_avail_kib /)"
+  avail="${avail:-0}"
+  if [[ "${avail}" -lt $((1024 * 1024)) ]]; then
+    warn "skip AUR ($(basename "${list_file}")) — <1 GiB free (нужен ~/.cache/yay)"
+    return 0
+  fi
 
   log "installing AUR packages one-by-one (${#want[@]}) from $(basename "${list_file}")"
   for pkg in "${want[@]}"; do
@@ -179,6 +197,20 @@ aur_install_list() {
       warn "AUR package not found: ${pkg}"
     fi
   done
+}
+
+install_aur_extras() {
+  case "${INSTALL_EXTRAS:-0}" in
+    1|yes|true|TRUE|Yes) ;;
+    *)
+      log "AUR extras skipped (INSTALL_EXTRAS=${INSTALL_EXTRAS:-0}) — cursor/nekobox/sunshine"
+      log "на боевой машине: INSTALL_EXTRAS=1 в .env"
+      return 0
+      ;;
+  esac
+  if [[ -f "${DOTFILES_DIR}/pkglist_aur_extra.txt" ]]; then
+    aur_install_list "${DOTFILES_DIR}/pkglist_aur_extra.txt"
+  fi
 }
 
 install_packages() {
@@ -199,6 +231,7 @@ install_packages() {
   install_nvidia_drivers
   install_ai_stack
   aur_install_list "${DOTFILES_DIR}/pkglist_aur.txt"
+  install_aur_extras
 }
 
 link_tree() {

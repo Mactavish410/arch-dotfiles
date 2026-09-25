@@ -129,16 +129,20 @@ while IFS= read -r pkg; do
 done < <(read_pkgs "${OFFICIAL_LIST}")
 
 log "checking AUR packages…"
-while IFS= read -r pkg; do
-  [[ -n "${pkg}" ]] || continue
-  rc=0
-  aur_check "${pkg}" || rc=$?
-  case "${rc}" in
-    0) log "OK AUR: ${pkg}" ;;
-    1) fail "not found in AUR: ${pkg}" ;;
-    2) warn "could not verify AUR: ${pkg} (network)" ;;
-  esac
-done < <(read_pkgs "${AUR_LIST}")
+for list in "${AUR_LIST}" "${ROOT}/pkglist_aur_extra.txt"; do
+  [[ -f "${list}" ]] || continue
+  log "— $(basename "${list}")"
+  while IFS= read -r pkg; do
+    [[ -n "${pkg}" ]] || continue
+    rc=0
+    aur_check "${pkg}" || rc=$?
+    case "${rc}" in
+      0) log "OK AUR: ${pkg}" ;;
+      1) fail "not found in AUR: ${pkg}" ;;
+      2) warn "could not verify AUR: ${pkg} (network)" ;;
+    esac
+  done < <(read_pkgs "${list}")
+done
 
 if [[ "${have_pacman}" -eq 1 ]]; then
   if pacman -Qq nvidia-open-dkms nvidia-open 2>/dev/null | grep -q .; then

@@ -1,7 +1,5 @@
+# Essential AUR for the rice (relatively small).
 zapret-git
 wlogout
-cursor-bin
-nekobox
 gruvbox-dark-gtk
 gruvbox-dark-icons-gtk
-sunshine
