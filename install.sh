@@ -176,17 +176,48 @@ pacman_install_list() {
   ui_info "official: ${n} пакетов ← $(basename "${list_file}")"
   if sudo pacman -S --needed --noconfirm "${have[@]}"; then
     ui_ok "пакеты установлены (${n})"
-    return 0
+  else
+    warn "батч упал — по одному…"
+    i=0
+    for pkg in "${have[@]}"; do
+      i=$((i + 1))
+      printf '  '
+      ui_bar "${i}" "${n}" "${pkg}" 24
+      sudo pacman -S --needed --noconfirm "${pkg}" || warn "fail: ${pkg}"
+    done
   fi
 
-  warn "батч упал — по одному…"
-  i=0
-  for pkg in "${have[@]}"; do
-    i=$((i + 1))
-    printf '  '
-    ui_bar "${i}" "${n}" "${pkg}" 24
-    sudo pacman -S --needed --noconfirm "${pkg}" || warn "fail: ${pkg}"
-  done
+  reclaim_disk_after_pkgs
+}
+
+# Pacman leaves multi-GiB in /var/cache — free it so symlinks/themes can run on small VMs.
+reclaim_disk_after_pkgs() {
+  ui_info "чистим кэш pacman / yay (освобождаем место)…"
+  if command -v paccache >/dev/null 2>&1; then
+    sudo paccache -rk1 2>/dev/null || true
+  fi
+  # Remove all cached packages (already installed on disk)
+  yes | sudo pacman -Scc 2>/dev/null || sudo pacman -Sc --noconfirm 2>/dev/null || true
+  rm -rf "${HOME}/.cache/yay" /tmp/makepkg-* /tmp/yay* 2>/dev/null || true
+  sudo journalctl --vacuum-size=50M >/dev/null 2>&1 || true
+  local avail
+  avail="$(fs_avail_kib /)"
+  avail="${avail:-0}"
+  ui_ok "после очистки свободно ≈ $((avail / 1024)) MiB"
+}
+
+require_space_kib() {
+  local need="$1" label="${2:-продолжения}"
+  local avail
+  avail="$(fs_avail_kib /home 2>/dev/null || fs_avail_kib /)"
+  avail="${avail:-0}"
+  if [[ "${avail}" -lt "${need}" ]]; then
+    die "мало места для ${label} (нужно ≥$((need / 1024)) MiB, есть ≈$((avail / 1024)) MiB).
+  df -h
+  sudo pacman -Scc
+  rm -rf ~/.cache/yay
+  # VirtualBox: увеличь VDI (минимум 40–60 GiB для light)"
+  fi
 }
 
 aur_install_list() {
@@ -265,30 +296,38 @@ install_packages() {
 
 link_tree() {
   local src="$1" dest="$2"
-  mkdir -p "$(dirname "${dest}")"
+  if ! mkdir -p "$(dirname "${dest}")" 2>/dev/null; then
+    warn "нет места для $(dirname "${dest}") — skip ${dest}"
+    return 0
+  fi
   if [[ -e "${dest}" || -L "${dest}" ]]; then
     if [[ -L "${dest}" ]]; then
       rm -f "${dest}"
     elif [[ -d "${dest}" && ! -L "${dest}" ]]; then
-      warn "backup ${dest} → ${dest}.bak.endeavouros"
-      mv "${dest}" "${dest}.bak.endeavouros"
+      mv "${dest}" "${dest}.bak.endeavouros" 2>/dev/null || true
     else
-      warn "backup ${dest} → ${dest}.bak.endeavouros"
-      mv "${dest}" "${dest}.bak.endeavouros"
+      mv "${dest}" "${dest}.bak.endeavouros" 2>/dev/null || true
     fi
   fi
-  ln -snf "${src}" "${dest}"
+  ln -snf "${src}" "${dest}" 2>/dev/null || warn "symlink fail: ${dest}"
 }
 
 symlink_configs() {
   local item name child cname
+  # Need room for ~/.config tree after pacman filled the disk
+  reclaim_disk_after_pkgs
+  require_space_kib $((300 * 1024)) "симлинков ~/.config"
+
   if [[ -d "${DOTFILES_DIR}/config" ]]; then
     shopt -s nullglob
     for item in "${DOTFILES_DIR}/config"/*; do
       name="$(basename "${item}")"
       [[ "${name}" == *.example ]] && continue
       if [[ -d "${item}" ]]; then
-        mkdir -p "${HOME}/.config/${name}"
+        mkdir -p "${HOME}/.config/${name}" 2>/dev/null || {
+          warn "нет места для ~/.config/${name}"
+          continue
+        }
         for child in "${item}"/*; do
           [[ -e "${child}" ]] || continue
           cname="$(basename "${child}")"
@@ -313,7 +352,7 @@ symlink_configs() {
     shopt -u nullglob dotglob
   fi
 
-  mkdir -p "${HOME}/.config/systemd/user"
+  mkdir -p "${HOME}/.config/systemd/user" 2>/dev/null || true
   if [[ -d "${DOTFILES_DIR}/systemd/user" ]]; then
     shopt -s nullglob
     for item in "${DOTFILES_DIR}/systemd/user"/*; do
@@ -324,7 +363,7 @@ symlink_configs() {
   fi
   systemctl --user daemon-reload || true
 
-  mkdir -p "${HOME}/.local/bin"
+  mkdir -p "${HOME}/.local/bin" 2>/dev/null || true
   if [[ -d "${DOTFILES_DIR}/bin" ]]; then
     shopt -s nullglob
     for item in "${DOTFILES_DIR}/bin"/*; do
