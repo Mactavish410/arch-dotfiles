@@ -357,10 +357,20 @@ cd ~/dotfiles
 
 | Симптом | Что проверить |
 |---------|----------------|
+| `не найдена цель: …` | пакет не в official — в AUR или переименован. `./scripts/validate-pkglists.sh` |
+| Конфликт `nvidia-open*` / `nvidia-dkms` | EOS уже поставил open-драйвер; `nvidia-dkms` в pkglist не кладём |
 | Чёрный экран Hyprland | `nvidia_drm.modeset=1`, mkinitcpio, TTY Ctrl+Alt+F2 |
 | Нет интернета после VPN | выключить один из слоёв (zapret / sing-box / exit node) |
 | Нет шаринга экрана | portal-hyprland + portal-gtk + PipeWire |
 | Docker забил корневой SSD | `daemon.json` → `data-root` на `$DOCKER_DATA_ROOT` |
 | Ollama на маленьком диске | drop-in `OLLAMA_MODELS` |
+
+### Политика пакетов
+
+- `pkglist.txt` — **только** official (`pacman -Si` / группа в sync DB).
+- `pkglist_aur.txt` — только AUR (`yay -Si`).
+- Перед `./install.sh` на EOS гоняется `scripts/validate-pkglists.sh` через pacman (строго). На Windows/CI — API, сеть может WARN.
+- NVIDIA: если уже есть `nvidia-open` / `nvidia-open-dkms`, новые драйверы не ставятся.
+- Обои / сбои отдельных AUR-пакетов не валят весь install; битые **имена** в списках валят preflight на EOS.
 
 Удачи в Night City.

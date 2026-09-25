@@ -55,6 +55,7 @@ run_one "shell syntax"        "tests/test_shell_syntax.sh"
 run_one "theme structure"     "tests/test_theme_structure.sh"
 run_one "json configs"        "tests/test_json_configs.sh"
 run_one "gitattributes / LF"  "tests/test_gitattributes.sh"
+run_one "pkglists Arch/AUR"   "tests/test_pkglists.sh"
 run_one "ai assistant"        "tests/test_ai_assistant.py"
 
 echo ""

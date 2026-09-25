@@ -41,15 +41,96 @@ install_yay() {
   rm -rf "${tmp}"
 }
 
-install_packages() {
+# Skip proprietary nvidia-dkms if EOS already has nvidia-open*
+install_nvidia_drivers() {
+  if pacman -Qq nvidia-open-dkms nvidia-open nvidia-dkms nvidia 2>/dev/null | grep -q .; then
+    log "NVIDIA driver already present: $(pacman -Qq nvidia-open-dkms nvidia-open nvidia-dkms nvidia 2>/dev/null | tr '\n' ' ')"
+    return 0
+  fi
+  log "no NVIDIA driver found — installing nvidia-open-dkms (Turing+)"
+  if pacman -Si nvidia-open-dkms >/dev/null 2>&1; then
+    sudo pacman -S --needed --noconfirm nvidia-open-dkms nvidia-utils || \
+      warn "nvidia-open-dkms install failed — install drivers manually"
+  else
+    sudo pacman -S --needed --noconfirm nvidia-dkms nvidia-utils || \
+      warn "nvidia-dkms install failed — install drivers manually"
+  fi
+}
+
+# Install only packages that exist in sync DB (missing → warn, continue).
+# Supports package groups (e.g. base-devel).
+pacman_install_list() {
+  local list_file="$1"
+  local -a want=() have=() missing=()
+  local pkg
+
   need_cmd pacman
-  log "installing official packages from pkglist.txt"
-  # shellcheck disable=SC2024
-  sudo pacman -S --needed --noconfirm - < "${DOTFILES_DIR}/pkglist.txt"
+  mapfile -t want < <(grep -E '^[a-zA-Z0-9][a-zA-Z0-9.+_-]*$' "${list_file}" || true)
+  [[ ${#want[@]} -gt 0 ]] || { warn "empty package list: ${list_file}"; return 0; }
+
+  sudo pacman -Sy --noconfirm
+
+  for pkg in "${want[@]}"; do
+    if pacman -Si "${pkg}" >/dev/null 2>&1 || pacman -Sg "${pkg}" >/dev/null 2>&1; then
+      have+=("${pkg}")
+    else
+      missing+=("${pkg}")
+    fi
+  done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    warn "not in official repos (skipped): ${missing[*]}"
+    warn "fix names or move to pkglist_aur.txt, then: ./scripts/validate-pkglists.sh"
+  fi
+  if [[ ${#have[@]} -eq 0 ]]; then
+    warn "nothing to install from ${list_file}"
+    return 0
+  fi
+
+  log "installing ${#have[@]} official packages from $(basename "${list_file}")"
+  if ! sudo pacman -S --needed --noconfirm "${have[@]}"; then
+    warn "batch install failed — retrying package-by-package"
+    local p
+    for p in "${have[@]}"; do
+      sudo pacman -S --needed --noconfirm "${p}" || warn "failed: ${p}"
+    done
+  fi
+}
+
+aur_install_list() {
+  local list_file="$1"
+  local -a want=()
+  local pkg
 
   need_cmd yay
-  log "installing AUR packages from pkglist_aur.txt"
-  yay -S --needed --noconfirm - < "${DOTFILES_DIR}/pkglist_aur.txt"
+  mapfile -t want < <(grep -E '^[a-zA-Z0-9][a-zA-Z0-9.+_-]*$' "${list_file}" || true)
+  [[ ${#want[@]} -gt 0 ]] || { warn "empty AUR list: ${list_file}"; return 0; }
+
+  log "installing AUR packages one-by-one (${#want[@]}) from $(basename "${list_file}")"
+  for pkg in "${want[@]}"; do
+    if yay -Si "${pkg}" >/dev/null 2>&1; then
+      yay -S --needed --noconfirm "${pkg}" || warn "AUR failed: ${pkg}"
+    else
+      warn "AUR package not found: ${pkg}"
+    fi
+  done
+}
+
+install_packages() {
+  # Strict validation on the target machine (pacman). API-only hosts warn but continue
+  # so Windows editing does not block; EOS always catches bad names before pacman -S.
+  if command -v pacman >/dev/null 2>&1; then
+    log "preflight: validating package lists (pacman)…"
+    if ! bash "${DOTFILES_DIR}/scripts/validate-pkglists.sh"; then
+      die "package list validation failed — fix pkglist*.txt (./scripts/validate-pkglists.sh)"
+    fi
+  else
+    warn "pacman not found — skip strict pkg validate (run on EndeavourOS before install)"
+  fi
+
+  pacman_install_list "${DOTFILES_DIR}/pkglist.txt"
+  install_nvidia_drivers
+  aur_install_list "${DOTFILES_DIR}/pkglist_aur.txt"
 }
 
 link_tree() {
@@ -189,13 +270,13 @@ setup_services() {
   sudo systemctl enable --now ollama || true
   sudo systemctl enable sddm || true
 
-  # Network default: zapret ON, sing-box OFF
-  if systemctl list-unit-files | grep -q '^zapret'; then
-    sudo systemctl enable --now zapret || warn "could not enable zapret"
-  elif systemctl list-unit-files | grep -q 'zapret\.service'; then
-    sudo systemctl enable --now zapret.service || warn "could not enable zapret"
+  # Network default: zapret ON, sing-box OFF (AUR package: zapret-git)
+  if systemctl list-unit-files 2>/dev/null | grep -qE '^zapret(\.service)?'; then
+    sudo systemctl enable --now zapret 2>/dev/null || \
+      sudo systemctl enable --now zapret.service 2>/dev/null || \
+      warn "could not enable zapret"
   else
-    warn "zapret unit not found — enable manually after AUR install"
+    warn "zapret unit not found — after zapret-git: sudo systemctl enable --now zapret"
   fi
 
   systemctl --user disable --now sing-box-vpn.service 2>/dev/null || true

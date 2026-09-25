@@ -20,6 +20,7 @@ SCRIPTS=(
   "scripts/fetch-wallpapers.sh"
   "scripts/setup-home-dirs.sh"
   "scripts/record-screen.sh"
+  "scripts/validate-pkglists.sh"
   "tests/run.sh"
   "tests/test_shell_syntax.sh"
   "tests/test_theme_structure.sh"

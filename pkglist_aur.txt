@@ -1,5 +1,6 @@
+zapret-git
+wlogout
 cursor-bin
-zapret
 nekobox
 gruvbox-dark-gtk
 gruvbox-dark-icons-gtk
