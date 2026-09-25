@@ -405,16 +405,47 @@ setup_docker_nvidia() {
   ui_ok "docker готов"
 }
 
+enable_sddm() {
+  # EOS may already have plasmalogin/gdm/lightdm as display-manager.service
+  if ! pacman -Qq sddm >/dev/null 2>&1; then
+    warn "sddm не установлен — skip DM"
+    return 0
+  fi
+
+  local current=""
+  if [[ -L /etc/systemd/system/display-manager.service ]]; then
+    current="$(readlink -f /etc/systemd/system/display-manager.service 2>/dev/null || true)"
+  fi
+
+  if [[ "${current}" == *sddm.service ]]; then
+    ui_ok "SDDM уже display-manager"
+    return 0
+  fi
+
+  if [[ -n "${current}" ]]; then
+    ui_info "сменяем DM ($(basename "${current}")) → sddm"
+    # Disable whatever owns display-manager.service (plasmalogin, gdm, …)
+    sudo systemctl disable display-manager.service 2>/dev/null || true
+    sudo rm -f /etc/systemd/system/display-manager.service 2>/dev/null || true
+  fi
+
+  if sudo systemctl enable sddm.service 2>/dev/null; then
+    ui_ok "SDDM включён"
+  else
+    warn "не удалось enable sddm — вручную: sudo systemctl enable sddm.service"
+  fi
+}
+
 setup_services() {
-  sudo systemctl enable --now NetworkManager || true
-  sudo systemctl enable --now bluetooth || true
-  sudo systemctl enable --now sshd || true
-  sudo systemctl enable sddm || true
+  sudo systemctl enable --now NetworkManager 2>/dev/null || true
+  sudo systemctl enable --now bluetooth 2>/dev/null || true
+  sudo systemctl enable --now sshd 2>/dev/null || true
+  enable_sddm
 
   if [[ "${INSTALL_PROFILE}" != "light" ]]; then
-    sudo systemctl enable --now tailscaled || true
+    sudo systemctl enable --now tailscaled 2>/dev/null || true
     if pacman -Qq ollama ollama-cuda >/dev/null 2>&1; then
-      sudo systemctl enable --now ollama || true
+      sudo systemctl enable --now ollama 2>/dev/null || true
     fi
     if systemctl list-unit-files 2>/dev/null | grep -qE '^zapret(\.service)?'; then
       sudo systemctl enable --now zapret 2>/dev/null || \
@@ -433,15 +464,19 @@ setup_ufw() {
   if ! command -v ufw >/dev/null 2>&1; then
     return 0
   fi
-  sudo ufw default deny incoming
-  sudo ufw default allow outgoing
-  sudo ufw allow OpenSSH
+  # Never abort install on ufw quirks (missing app profiles, etc.)
+  sudo ufw --force reset >/dev/null 2>&1 || true
+  sudo ufw default deny incoming || true
+  sudo ufw default allow outgoing || true
+  # Prefer port over app profile — "OpenSSH" profile often missing
+  sudo ufw allow 22/tcp comment 'SSH' || true
+  sudo ufw allow OpenSSH 2>/dev/null || true
   if [[ "${INSTALL_PROFILE}" != "light" ]]; then
     sudo ufw allow in on tailscale0 || true
-    sudo ufw allow 47984:48010/tcp
-    sudo ufw allow 47984:48010/udp
+    sudo ufw allow 47984:48010/tcp || true
+    sudo ufw allow 47984:48010/udp || true
   fi
-  sudo ufw --force enable
+  sudo ufw --force enable || warn "ufw enable не удался"
   ui_ok "ufw"
 }
 

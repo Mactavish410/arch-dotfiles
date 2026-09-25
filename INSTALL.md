@@ -357,7 +357,8 @@ cd ~/dotfiles
 
 | Симптом | Что проверить |
 |---------|----------------|
-| `No space left on device` / `Failure writing…` | диск полный: `df -h`, `sudo pacman -Scc`, `rm -rf ~/.cache/yay`. VM: увеличь VDI. Cursor/sunshine — только с `INSTALL_EXTRAS=1` |
+| SDDM / `display-manager.service` already exists | был Plasma/GDM — install снимает старый DM и включает SDDM |
+| UFW `OpenSSH` profile not found | ставим `22/tcp`; не валит install |
 | `не найдена цель: …` | пакет не в official — в AUR или переименован. `./scripts/validate-pkglists.sh` |
 | Конфликт `nvidia-open*` / `nvidia-dkms` | EOS уже поставил open-драйвер; `nvidia-dkms` в pkglist не кладём |
 | Чёрный экран Hyprland | `nvidia_drm.modeset=1`, mkinitcpio, TTY Ctrl+Alt+F2 |
