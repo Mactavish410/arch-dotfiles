@@ -64,11 +64,14 @@ git clone https://github.com/Mactavish410/arch-dotfiles.git ~/dotfiles
 cd ~/dotfiles
 cp .env.example .env    # DATA_ROOT, ключи, VPN_*
 chmod +x install.sh track.sh scripts/*.sh bin/* tests/*.sh
-./install.sh
+./install.sh            # меню: лёгкая / полная / полная+AI
+# или: ./install.sh --light | --full | --full-ai
 # reboot → Hyprland (SDDM)
 ```
 
-`install.sh` в конце сам запускает `scripts/fetch-wallpapers.sh` (4K по всем темам) и `theme-switch apply cyberpunk`. Нужна сеть. Перед установкой пакетов — `scripts/validate-pkglists.sh` (имена official/AUR).
+`install.sh` — TUI by **Mactavish410**: прогресс-бары и выбор профиля.  
+Лёгкая — минимум места (VM). Полная — Cursor/Sunshine/Docker. Полная+AI — ещё CUDA.  
+В конце: обои (`fetch-wallpapers.sh`) и `theme-switch apply cyberpunk`.
 
 Перед install: большой диск в `/mnt/data`, пакеты `git` + `base-devel`. См. [фазу 3](INSTALL.md#фаза-3--первый-вход-и-первостипенные-вещи).
 

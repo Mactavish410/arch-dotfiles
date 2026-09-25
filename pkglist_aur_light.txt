@@ -1,0 +1,4 @@
+# Light AUR — logout + GTK theme only (no Electron / Sunshine).
+wlogout
+gruvbox-dark-gtk
+gruvbox-dark-icons-gtk

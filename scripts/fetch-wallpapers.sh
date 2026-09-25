@@ -71,49 +71,64 @@ download_theme() {
   fi
 }
 
+# Optional: only one theme when INSTALL_PROFILE=light (saves disk/time).
+ONLY_THEME="${FETCH_ONLY_THEME:-}"
+if [[ "${INSTALL_PROFILE:-}" == "light" && -z "${ONLY_THEME}" ]]; then
+  ONLY_THEME="cyberpunk"
+fi
+
 mkdir -p "${WALL_ROOT}"/{cyberpunk,gruvbox-dark,catppuccin-mocha,tokyo-night,dracula,nord,rose-pine,everforest-dark}
 
+download_if() {
+  local theme="$1"
+  shift
+  if [[ -n "${ONLY_THEME}" && "${theme}" != "${ONLY_THEME}" ]]; then
+    return 0
+  fi
+  download_theme "${theme}" "$@"
+}
+
 # cyberpunk — neon city 4K (Pixnio 3854×2160 + wallhaven)
-download_theme cyberpunk \
+download_if cyberpunk \
   "https://pixnio.com/free-images/2026/08/30/2026-08-30-16-03-37.jpg" "pixnio-cyberpunk-3854x2160.jpg" \
   "https://w.wallhaven.cc/full/6d/wallhaven-6d1v5q.jpg" "night-city-neon.jpg" \
   "https://w.wallhaven.cc/full/xe/wallhaven-xe86w3.jpg" "aerial-neon-towers.jpg" \
   "https://w.wallhaven.cc/full/o5/wallhaven-o5r1e9.png" "neon-crowd-city-4k.png"
 
 # gruvbox-dark — warm landscapes
-download_theme gruvbox-dark \
+download_if gruvbox-dark \
   "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "warm-peaks.jpg" \
   "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "foggy-hills.jpg" \
   "https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "sunlit-valley.jpg"
 
 # catppuccin-mocha — soft mauve / rain neon
-download_theme catppuccin-mocha \
+download_if catppuccin-mocha \
   "https://images.unsplash.com/photo-1519681393784-d120267933ba?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "starry-mountains.jpg" \
   "https://images.unsplash.com/photo-1507400492013-162706c8be01?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "soft-dusk-clouds.jpg"
 
 # tokyo-night — cold city night
-download_theme tokyo-night \
+download_if tokyo-night \
   "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "tokyo-crossing.jpg" \
   "https://images.unsplash.com/photo-1513407030348-c983a97b98d8?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "tokyo-tower-night.jpg" \
   "https://w.wallhaven.cc/full/96/wallhaven-96pd3x.jpg" "neon-futuristic-night.jpg"
 
 # dracula — purple contrast night
-download_theme dracula \
+download_if dracula \
   "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "purple-milky-way.jpg" \
   "https://w.wallhaven.cc/full/57/wallhaven-57d315.jpg" "cyber-high-angle.jpg"
 
 # nord — arctic / aurora
-download_theme nord \
+download_if nord \
   "https://images.unsplash.com/photo-1483347756197-71ef80e95f73?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "aurora-over-snow.jpg" \
   "https://images.unsplash.com/photo-1531366936337-7c912a45b4d9?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "northern-lights.jpg"
 
 # rose-pine — soft dusk / pink clouds
-download_theme rose-pine \
+download_if rose-pine \
   "https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "pastel-dusk.jpg" \
   "https://images.unsplash.com/photo-1507400492013-162706c8be01?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "rose-clouds.jpg"
 
 # everforest-dark — forest canopy
-download_theme everforest-dark \
+download_if everforest-dark \
   "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "sunlit-forest.jpg" \
   "https://images.unsplash.com/photo-1448376561459-e1c2ad95b255?ixlib=rb-4.0.3&w=3840&q=90&fm=jpg" "deep-woods.jpg"
 

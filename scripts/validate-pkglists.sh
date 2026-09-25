@@ -129,7 +129,7 @@ while IFS= read -r pkg; do
 done < <(read_pkgs "${OFFICIAL_LIST}")
 
 log "checking AUR packages…"
-for list in "${AUR_LIST}" "${ROOT}/pkglist_aur_extra.txt"; do
+for list in "${AUR_LIST}" "${ROOT}/pkglist_aur_extra.txt" "${ROOT}/pkglist_aur_light.txt"; do
   [[ -f "${list}" ]] || continue
   log "— $(basename "${list}")"
   while IFS= read -r pkg; do
@@ -143,6 +143,21 @@ for list in "${AUR_LIST}" "${ROOT}/pkglist_aur_extra.txt"; do
     esac
   done < <(read_pkgs "${list}")
 done
+
+# Light official list (subset) — every name must exist
+if [[ -f "${ROOT}/pkglist_light.txt" ]]; then
+  log "checking pkglist_light.txt…"
+  while IFS= read -r pkg; do
+    [[ -n "${pkg}" ]] || continue
+    rc=0
+    official_check "${pkg}" || rc=$?
+    case "${rc}" in
+      0) log "OK light: ${pkg}" ;;
+      1) fail "light list unknown: ${pkg}" ;;
+      2) warn "could not verify light: ${pkg}" ;;
+    esac
+  done < <(read_pkgs "${ROOT}/pkglist_light.txt")
+fi
 
 if [[ "${have_pacman}" -eq 1 ]]; then
   if pacman -Qq nvidia-open-dkms nvidia-open 2>/dev/null | grep -q .; then
