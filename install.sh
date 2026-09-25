@@ -373,6 +373,21 @@ symlink_configs() {
     shopt -u nullglob
   fi
   ui_ok "симлинки config/home/bin"
+  enable_nvidia_hypr_env
+}
+
+# On real NVIDIA machines, uncomment source of nvidia.conf in hyprland.conf
+enable_nvidia_hypr_env() {
+  local conf="${HOME}/.config/hypr/hyprland.conf"
+  [[ -f "${conf}" ]] || return 0
+  if pacman -Qq nvidia-utils nvidia-open-dkms nvidia-dkms 2>/dev/null | grep -q .; then
+    if grep -qE '^# source = ~/.config/hypr/nvidia.conf' "${conf}"; then
+      sed -i 's|^# source = ~/.config/hypr/nvidia.conf|source = ~/.config/hypr/nvidia.conf|' "${conf}"
+      ui_ok "NVIDIA env включён в hyprland.conf"
+    fi
+  else
+    ui_info "без NVIDIA — nvidia.conf не подключаем (OK для VirtualBox)"
+  fi
 }
 
 setup_data_root() {
